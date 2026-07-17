@@ -11,6 +11,8 @@ It is fan-made and not official RuneScape or Jagex.
 - `/skill` gives simple training advice.
 - `/gear` gives simple gear advice.
 - `/clanquote` gives a short clan quote.
+- `/boss create/join/leave/list/ping` manages boss tags.
+- `/roll`, `/coin`, `/drop`, `/oracle`, and `/duel` are fun clan commands.
 - `/roninhelp` lists the commands.
 
 ## Files you need to care about
@@ -43,6 +45,7 @@ OPENAI_MODEL=gpt-5.6-luna
 REGISTER_COMMANDS_ON_START=true
 BOT_STATUS=/ask the ronin
 PORT=3000
+DATABASE_URL=
 ```
 
 Start the bot:
@@ -67,6 +70,8 @@ In the Discord Developer Portal:
    - Send Messages
    - Read Message History
 
+Boss tags do not require Discord roles. The bot stores signups and pings the saved users directly.
+
 ## Remote hosting setup
 
 Railway is the easiest option for this bot.
@@ -74,7 +79,11 @@ Railway is the easiest option for this bot.
 1. Upload this folder to GitHub.
 2. Create a Railway project from the GitHub repo.
 3. Add the same variables from `.env.example` inside Railway Variables.
-4. Deploy it.
+4. For saved boss tags that survive redeploys, add a Railway Postgres service.
+5. Add `DATABASE_URL=${{Postgres.DATABASE_URL}}` to the bot service variables.
+6. Deploy it.
+
+Without `DATABASE_URL`, the bot falls back to a local JSON file for development. That is fine for testing, but Postgres is the fully remote setup.
 
 The bot has a small health page at `/health` so hosts can see that it is awake.
 
