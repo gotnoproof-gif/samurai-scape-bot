@@ -13,7 +13,7 @@ OPENAI_MODEL=gpt-5.6-luna
 REGISTER_COMMANDS_ON_START=true
 BOT_STATUS=/ask the ronin
 PORT=3000
+DATABASE_URL=${{Postgres.DATABASE_URL}}
 ```
 
 After saving the variables, redeploy the Railway service.
-
