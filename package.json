@@ -14,6 +14,7 @@
   "dependencies": {
     "discord.js": "^14.27.0",
     "dotenv": "^17.4.2",
-    "openai": "^6.48.0"
+    "openai": "^6.48.0",
+    "pg": "^8.22.0"
   }
 }
