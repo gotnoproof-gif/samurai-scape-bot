@@ -1,0 +1,19 @@
+{
+  "name": "samurai-scape-bot",
+  "version": "1.0.0",
+  "description": "A RuneScape-inspired samurai Discord bot with OpenAI-powered slash commands.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/register-commands.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "discord.js": "^14.27.0",
+    "dotenv": "^17.4.2",
+    "openai": "^6.48.0"
+  }
+}
