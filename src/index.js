@@ -7,6 +7,11 @@ import {
 } from "discord.js";
 import { handleBossCommand } from "./bossTags.js";
 import { handleFunCommand } from "./funCommands.js";
+import {
+  createMemeResponder,
+  memeResponderIsEnabled,
+  memeResponderWantsMessageContent
+} from "./memeResponder.js";
 import { askRonin } from "./openaiClient.js";
 import { registerCommands } from "./register-commands.js";
 import { startHealthServer } from "./server.js";
@@ -41,13 +46,32 @@ function requireStartupEnv() {
   }
 }
 
+function getClientIntents() {
+  const intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages];
+
+  if (memeResponderWantsMessageContent()) {
+    intents.push(GatewayIntentBits.MessageContent);
+  }
+
+  return intents;
+}
+
 async function main() {
   requireStartupEnv();
   const tagStore = await createTagStore();
+  const handleMemeResponder = createMemeResponder();
   console.log(`Boss tag storage ready: ${tagStore.label}.`);
+  console.log([
+    `Meme responder: ${memeResponderIsEnabled() ? "enabled" : "disabled"}.`,
+    `Message content intent: ${memeResponderWantsMessageContent() ? "requested" : "not requested"}.`
+  ].join(" "));
+
+  if (memeResponderIsEnabled() && !memeResponderWantsMessageContent()) {
+    console.warn("Meme responder is enabled, but MESSAGE_CONTENT_INTENT_ENABLED is not true.");
+  }
 
   const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
+    intents: getClientIntents()
   });
 
   client.once(Events.ClientReady, async readyClient => {
@@ -139,11 +163,19 @@ async function main() {
   });
 
   client.on(Events.MessageCreate, async message => {
-    if (message.author.bot || !client.user || !message.mentions.has(client.user)) return;
+    if (message.author.bot || !client.user) return;
 
-    const prompt = getMentionPrompt(message, client.user);
+    if (!message.mentions.has(client.user)) {
+      try {
+        await handleMemeResponder(message);
+      } catch (error) {
+        console.error("Meme responder failed", error);
+      }
+      return;
+    }
 
     try {
+      const prompt = getMentionPrompt(message, client.user);
       await message.channel.sendTyping();
 
       if (!prompt) {
