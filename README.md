@@ -13,6 +13,7 @@ It is fan-made and not official RuneScape or Jagex.
 - `/clanquote` gives a short clan quote.
 - `/boss create/join/leave/list/ping` manages boss tags.
 - `/roll`, `/coin`, `/drop`, `/oracle`, and `/duel` are fun clan commands.
+- Random chat memes can be enabled so the bot sometimes replies to normal messages with RuneScape-style meme lines.
 - `/roninhelp` lists the commands.
 
 ## Files you need to care about
@@ -46,6 +47,11 @@ REGISTER_COMMANDS_ON_START=true
 BOT_STATUS=/ask the ronin
 PORT=3000
 DATABASE_URL=
+MEME_RESPONDER_ENABLED=true
+MESSAGE_CONTENT_INTENT_ENABLED=false
+MEME_REPLY_CHANCE=0.06
+MEME_KEYWORD_REPLY_CHANCE=0.22
+MEME_COOLDOWN_MS=180000
 ```
 
 Start the bot:
@@ -72,6 +78,8 @@ In the Discord Developer Portal:
 
 Boss tags do not require Discord roles. The bot stores signups and pings the saved users directly.
 
+For random chat memes, turn on the bot's Message Content Intent in the Discord Developer Portal, then set `MESSAGE_CONTENT_INTENT_ENABLED=true`. Without that Discord switch, the bot can still run slash commands and boss tags, but it cannot read normal chat text.
+
 ## Remote hosting setup
 
 Railway is the easiest option for this bot.
@@ -81,7 +89,13 @@ Railway is the easiest option for this bot.
 3. Add the same variables from `.env.example` inside Railway Variables.
 4. For saved boss tags that survive redeploys, add a Railway Postgres service.
 5. Add `DATABASE_URL=${{Postgres.DATABASE_URL}}` to the bot service variables.
-6. Deploy it.
+6. To enable random chat memes, set:
+   - `MEME_RESPONDER_ENABLED=true`
+   - `MESSAGE_CONTENT_INTENT_ENABLED=true`
+   - `MEME_REPLY_CHANCE=0.06`
+   - `MEME_KEYWORD_REPLY_CHANCE=0.22`
+   - `MEME_COOLDOWN_MS=180000`
+7. Deploy it.
 
 Without `DATABASE_URL`, the bot falls back to a local JSON file for development. That is fine for testing, but Postgres is the fully remote setup.
 
