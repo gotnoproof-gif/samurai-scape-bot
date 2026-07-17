@@ -5,9 +5,12 @@ import {
   Events,
   GatewayIntentBits
 } from "discord.js";
+import { handleBossCommand } from "./bossTags.js";
+import { handleFunCommand } from "./funCommands.js";
 import { askRonin } from "./openaiClient.js";
 import { registerCommands } from "./register-commands.js";
 import { startHealthServer } from "./server.js";
+import { createTagStore } from "./storage.js";
 import { randomItem, trimForDiscord } from "./utils.js";
 
 const quests = [
@@ -40,6 +43,8 @@ function requireStartupEnv() {
 
 async function main() {
   requireStartupEnv();
+  const tagStore = await createTagStore();
+  console.log(`Boss tag storage ready: ${tagStore.label}.`);
 
   const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
@@ -63,6 +68,15 @@ async function main() {
     try {
       await interaction.deferReply();
 
+      if (interaction.commandName === "boss") {
+        await handleBossCommand(interaction, tagStore);
+        return;
+      }
+
+      if (await handleFunCommand(interaction)) {
+        return;
+      }
+
       if (interaction.commandName === "quest") {
         await interaction.editReply(randomItem(quests));
         return;
@@ -77,10 +91,12 @@ async function main() {
         await interaction.editReply([
           "**Ronin of Gielinor commands**",
           "`/ask` - ask the AI samurai anything",
+          "`/boss create/join/leave/list/ping` - manage boss tags",
           "`/quest` - get a quest hook",
           "`/skill` - get skilling advice",
           "`/gear` - get simple gear advice",
-          "`/clanquote` - get a short clan quote"
+          "`/clanquote` - get a short clan quote",
+          "`/roll`, `/coin`, `/drop`, `/oracle`, `/duel` - fun clan commands"
         ].join("\n"));
         return;
       }
