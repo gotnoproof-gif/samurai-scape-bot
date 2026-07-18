@@ -15,6 +15,7 @@ It is fan-made and not official RuneScape or Jagex.
 - `/roll`, `/coin`, `/drop`, `/oracle`, and `/duel` are fun clan commands.
 - Random chat memes can be enabled so the bot sometimes replies to normal messages with RuneScape-style meme lines.
 - `/roninhelp` lists the commands.
+- Mentioning the bot and asking for `commands` or `help` also shows the command list.
 
 ## Files you need to care about
 
@@ -40,7 +41,8 @@ Fill in:
 ```env
 DISCORD_TOKEN=your_discord_bot_token
 DISCORD_CLIENT_ID=your_discord_application_id
-DISCORD_GUILD_ID=your_server_id
+DISCORD_GUILD_ID=
+COMMAND_SCOPE=global
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-5.6-luna
 REGISTER_COMMANDS_ON_START=true
@@ -77,6 +79,8 @@ In the Discord Developer Portal:
    - Read Message History
 
 Boss tags do not require Discord roles. The bot stores signups and pings the saved users directly.
+
+Slash commands are global by default, so they work in every server where the bot is invited. Discord can take a few minutes to show new global commands in a newly invited server. For one-server testing, set `COMMAND_SCOPE=guild` and fill in `DISCORD_GUILD_ID`.
 
 For random chat memes, turn on the bot's Message Content Intent in the Discord Developer Portal, then set `MESSAGE_CONTENT_INTENT_ENABLED=true`. Without that Discord switch, the bot can still run slash commands and boss tags, but it cannot read normal chat text.
 
