@@ -7,11 +7,17 @@ export function getCommandHelpText() {
     "`/boss leave name:Nex` - leave a boss tag",
     "`/boss list` - show boss tags",
     "`/boss ping name:Nex message:World 330` - ping everyone in a tag",
+    "`/xp gain skill:slayer amount:50000` - log an XP drop",
+    "`/xp level skill:magic level:94` - announce a level-up",
+    "`/xp board` - show the XP leaderboard",
+    "`/meme topic:rng` - post a meme picture",
+    "`/quote category:famous` - post a quote",
+    "`/profile`, `/loot`, `/choose`, `/timer` - game and clan tools",
     "`/quest` - get a quest hook",
     "`/skill name:slayer level:70` - get skilling advice",
     "`/gear activity:Jad` - get simple gear advice",
     "`/clanquote` - get a short clan quote",
-    "`/roll`, `/coin`, `/drop`, `/oracle`, `/duel` - fun clan commands"
+    "`/roll`, `/coin`, `/drop`, `/oracle`, `/duel`, `/roast`, `/compliment`, `/trivia` - fun clan commands"
   ].join("\n");
 }
 
