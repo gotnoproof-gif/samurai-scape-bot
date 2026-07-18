@@ -175,6 +175,38 @@ export const commandData = [
     ),
 
   new SlashCommandBuilder()
+    .setName("samurai")
+    .setDescription("Track the storyline path from adventurer to samurai.")
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName("path")
+        .setDescription("Show samurai path progress.")
+        .addUserOption(option =>
+          option
+            .setName("user")
+            .setDescription("Optional server member")
+            .setRequired(false)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName("train")
+        .setDescription("Train on the samurai path and gain story XP.")
+        .addStringOption(option =>
+          option
+            .setName("action")
+            .setDescription("What did you train or do?")
+            .setRequired(false)
+            .setMaxLength(160)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName("board")
+        .setDescription("Show the samurai path leaderboard.")
+    ),
+
+  new SlashCommandBuilder()
     .setName("boss")
     .setDescription("Create, join, list, and ping boss tags.")
     .addSubcommand(subcommand =>
