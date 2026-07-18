@@ -65,6 +65,7 @@ class JsonTagStore {
     data.guilds[guildId] ||= { tags: {} };
     data.guilds[guildId].tags ||= {};
     data.guilds[guildId].xpTotals ||= {};
+    data.guilds[guildId].samuraiProgress ||= {};
     return data.guilds[guildId];
   }
 
@@ -209,6 +210,78 @@ class JsonTagStore {
 
     await this.write(data);
   }
+
+  async touchSamuraiProgress(guildId, userId) {
+    const data = await this.read();
+    const guild = this.getGuild(data, guildId);
+
+    guild.samuraiProgress[userId] ||= {
+      userId,
+      totalXp: 0,
+      storyStep: 0,
+      createdAt: new Date().toISOString(),
+      lastAwardedAt: null,
+      lastSeenAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    guild.samuraiProgress[userId].lastSeenAt = new Date().toISOString();
+    guild.samuraiProgress[userId].updatedAt = new Date().toISOString();
+
+    await this.write(data);
+    return guild.samuraiProgress[userId];
+  }
+
+  async addSamuraiXp(guildId, userId, amount) {
+    const data = await this.read();
+    const guild = this.getGuild(data, guildId);
+    const now = new Date().toISOString();
+
+    guild.samuraiProgress[userId] ||= {
+      userId,
+      totalXp: 0,
+      storyStep: 0,
+      createdAt: now,
+      lastAwardedAt: null,
+      lastSeenAt: now,
+      updatedAt: now
+    };
+
+    const previousXp = Number(guild.samuraiProgress[userId].totalXp || 0);
+
+    guild.samuraiProgress[userId].totalXp = previousXp + amount;
+    guild.samuraiProgress[userId].storyStep = Number(guild.samuraiProgress[userId].storyStep || 0) + 1;
+    guild.samuraiProgress[userId].lastAwardedAt = now;
+    guild.samuraiProgress[userId].lastSeenAt = now;
+    guild.samuraiProgress[userId].updatedAt = now;
+
+    await this.write(data);
+
+    return {
+      ...guild.samuraiProgress[userId],
+      previousXp
+    };
+  }
+
+  async getSamuraiProgress(guildId, userId) {
+    const data = await this.read();
+    const guild = this.getGuild(data, guildId);
+    return guild.samuraiProgress[userId] || null;
+  }
+
+  async listSamuraiLeaderboard(guildId, limit = 10) {
+    const data = await this.read();
+    const guild = this.getGuild(data, guildId);
+
+    return Object.values(guild.samuraiProgress || {})
+      .map(row => ({
+        userId: row.userId,
+        totalXp: Number(row.totalXp || 0),
+        storyStep: Number(row.storyStep || 0)
+      }))
+      .sort((a, b) => b.totalXp - a.totalXp)
+      .slice(0, limit);
+  }
 }
 
 class PostgresTagStore {
@@ -247,6 +320,18 @@ class PostgresTagStore {
         total_xp BIGINT NOT NULL DEFAULT 0,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         PRIMARY KEY (guild_id, user_id, skill_key)
+      );
+
+      CREATE TABLE IF NOT EXISTS samurai_progress (
+        guild_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        total_xp BIGINT NOT NULL DEFAULT 0,
+        story_step INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_awarded_at TIMESTAMPTZ,
+        last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (guild_id, user_id)
       );
     `);
   }
@@ -425,6 +510,89 @@ class PostgresTagStore {
       "DELETE FROM xp_totals WHERE guild_id = $1 AND user_id = $2",
       [guildId, userId]
     );
+  }
+
+  rowToSamuraiProgress(row) {
+    return {
+      userId: row.user_id,
+      totalXp: Number(row.total_xp || 0),
+      storyStep: Number(row.story_step || 0),
+      createdAt: row.created_at,
+      lastAwardedAt: row.last_awarded_at,
+      lastSeenAt: row.last_seen_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  async touchSamuraiProgress(guildId, userId) {
+    const result = await this.pool.query(
+      `INSERT INTO samurai_progress (guild_id, user_id)
+       VALUES ($1, $2)
+       ON CONFLICT (guild_id, user_id)
+       DO UPDATE SET
+         last_seen_at = NOW(),
+         updated_at = NOW()
+       RETURNING *`,
+      [guildId, userId]
+    );
+
+    return this.rowToSamuraiProgress(result.rows[0]);
+  }
+
+  async addSamuraiXp(guildId, userId, amount) {
+    const result = await this.pool.query(
+      `WITH existing AS (
+         SELECT total_xp
+         FROM samurai_progress
+         WHERE guild_id = $1 AND user_id = $2
+       ),
+       upserted AS (
+         INSERT INTO samurai_progress (guild_id, user_id, total_xp, story_step, last_awarded_at)
+         VALUES ($1, $2, $3, 1, NOW())
+         ON CONFLICT (guild_id, user_id)
+         DO UPDATE SET
+           total_xp = samurai_progress.total_xp + EXCLUDED.total_xp,
+           story_step = samurai_progress.story_step + 1,
+           last_awarded_at = NOW(),
+           last_seen_at = NOW(),
+           updated_at = NOW()
+         RETURNING *
+       )
+       SELECT upserted.*, COALESCE((SELECT total_xp FROM existing), 0) AS previous_xp
+       FROM upserted`,
+      [guildId, userId, amount]
+    );
+
+    return {
+      ...this.rowToSamuraiProgress(result.rows[0]),
+      previousXp: Number(result.rows[0].previous_xp || 0)
+    };
+  }
+
+  async getSamuraiProgress(guildId, userId) {
+    const result = await this.pool.query(
+      "SELECT * FROM samurai_progress WHERE guild_id = $1 AND user_id = $2",
+      [guildId, userId]
+    );
+
+    return result.rows[0] ? this.rowToSamuraiProgress(result.rows[0]) : null;
+  }
+
+  async listSamuraiLeaderboard(guildId, limit = 10) {
+    const result = await this.pool.query(
+      `SELECT user_id, total_xp, story_step
+       FROM samurai_progress
+       WHERE guild_id = $1
+       ORDER BY total_xp DESC, story_step DESC
+       LIMIT $2`,
+      [guildId, limit]
+    );
+
+    return result.rows.map(row => ({
+      userId: row.user_id,
+      totalXp: Number(row.total_xp || 0),
+      storyStep: Number(row.story_step || 0)
+    }));
   }
 }
 
