@@ -7,17 +7,20 @@ import {
 } from "discord.js";
 import { handleBossCommand } from "./bossTags.js";
 import { handleFunCommand } from "./funCommands.js";
+import { handleGameCommand } from "./gameCommands.js";
 import {
   createMemeResponder,
   memeResponderIsEnabled,
   memeResponderWantsMessageContent
 } from "./memeResponder.js";
+import { memeImageResponderIsEnabled } from "./memeImages.js";
 import { getCommandHelpText, isAmbientCommandHelpRequest, isCommandHelpRequest } from "./helpText.js";
 import { askRonin } from "./openaiClient.js";
 import { registerCommands } from "./register-commands.js";
 import { startHealthServer } from "./server.js";
 import { createTagStore } from "./storage.js";
 import { randomItem, trimForDiscord } from "./utils.js";
+import { handleXpCommand } from "./xpCommands.js";
 
 const quests = [
   "Quest scroll: travel to Varrock at dusk, recover the jade katana beneath the bank, and return with honor and a teleport tab.",
@@ -64,6 +67,7 @@ async function main() {
   console.log(`Boss tag storage ready: ${tagStore.label}.`);
   console.log([
     `Meme responder: ${memeResponderIsEnabled() ? "enabled" : "disabled"}.`,
+    `Meme images: ${memeImageResponderIsEnabled() ? "enabled" : "disabled"}.`,
     `Message content intent: ${memeResponderWantsMessageContent() ? "requested" : "not requested"}.`
   ].join(" "));
 
@@ -98,7 +102,16 @@ async function main() {
         return;
       }
 
+      if (interaction.commandName === "xp") {
+        await handleXpCommand(interaction, tagStore);
+        return;
+      }
+
       if (await handleFunCommand(interaction)) {
+        return;
+      }
+
+      if (await handleGameCommand(interaction)) {
         return;
       }
 
