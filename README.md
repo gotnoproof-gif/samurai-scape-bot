@@ -12,8 +12,13 @@ It is fan-made and not official RuneScape or Jagex.
 - `/gear` gives simple gear advice.
 - `/clanquote` gives a short clan quote.
 - `/boss create/join/leave/list/ping` manages boss tags.
+- `/xp gain/level/board/reset` tracks fun XP drops and server leaderboards.
+- `/meme` posts RuneScape-style meme images.
+- `/quote` posts famous, samurai, clan, or RuneScape-style quotes.
+- `/profile`, `/loot`, `/choose`, and `/timer` add game-night tools.
 - `/roll`, `/coin`, `/drop`, `/oracle`, and `/duel` are fun clan commands.
-- Random chat memes can be enabled so the bot sometimes replies to normal messages with RuneScape-style meme lines.
+- `/roast`, `/compliment`, and `/trivia` add more chat fun.
+- Random chat memes can be enabled so the bot sometimes replies to normal messages with RuneScape-style meme lines or meme images.
 - `/roninhelp` lists the commands.
 - Mentioning the bot and asking for `commands` or `help` also shows the command list.
 
@@ -51,8 +56,10 @@ PORT=3000
 DATABASE_URL=
 MEME_RESPONDER_ENABLED=true
 MESSAGE_CONTENT_INTENT_ENABLED=false
+MEME_IMAGE_RESPONDER_ENABLED=true
 MEME_REPLY_CHANCE=0.06
 MEME_KEYWORD_REPLY_CHANCE=0.22
+MEME_IMAGE_REPLY_CHANCE=0.35
 MEME_COOLDOWN_MS=180000
 ```
 
@@ -96,8 +103,10 @@ Railway is the easiest option for this bot.
 6. To enable random chat memes, set:
    - `MEME_RESPONDER_ENABLED=true`
    - `MESSAGE_CONTENT_INTENT_ENABLED=true`
+   - `MEME_IMAGE_RESPONDER_ENABLED=true`
    - `MEME_REPLY_CHANCE=0.06`
    - `MEME_KEYWORD_REPLY_CHANCE=0.22`
+   - `MEME_IMAGE_REPLY_CHANCE=0.35`
    - `MEME_COOLDOWN_MS=180000`
 7. Deploy it.
 
