@@ -90,11 +90,20 @@ In Railway:
 DISCORD_TOKEN=your_discord_bot_token
 DISCORD_CLIENT_ID=your_discord_application_id
 DISCORD_GUILD_ID=your_discord_server_id
+COMMAND_SCOPE=global
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-5.6-luna
 REGISTER_COMMANDS_ON_START=true
 BOT_STATUS=/ask the ronin
 PORT=3000
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+MEME_RESPONDER_ENABLED=true
+MESSAGE_CONTENT_INTENT_ENABLED=true
+MEME_IMAGE_RESPONDER_ENABLED=true
+MEME_REPLY_CHANCE=0.06
+MEME_KEYWORD_REPLY_CHANCE=0.22
+MEME_IMAGE_REPLY_CHANCE=0.35
+MEME_COOLDOWN_MS=180000
 ```
 
 After adding variables, deploy or redeploy the service.
@@ -107,4 +116,3 @@ When Railway says the bot is running:
 2. Go to your server.
 3. Type `/roninhelp`.
 4. If commands appear, the bot is alive.
-
