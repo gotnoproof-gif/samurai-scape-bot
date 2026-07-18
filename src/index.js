@@ -12,6 +12,7 @@ import {
   memeResponderIsEnabled,
   memeResponderWantsMessageContent
 } from "./memeResponder.js";
+import { getCommandHelpText, isAmbientCommandHelpRequest, isCommandHelpRequest } from "./helpText.js";
 import { askRonin } from "./openaiClient.js";
 import { registerCommands } from "./register-commands.js";
 import { startHealthServer } from "./server.js";
@@ -112,16 +113,7 @@ async function main() {
       }
 
       if (interaction.commandName === "roninhelp") {
-        await interaction.editReply([
-          "**Ronin of Gielinor commands**",
-          "`/ask` - ask the AI samurai anything",
-          "`/boss create/join/leave/list/ping` - manage boss tags",
-          "`/quest` - get a quest hook",
-          "`/skill` - get skilling advice",
-          "`/gear` - get simple gear advice",
-          "`/clanquote` - get a short clan quote",
-          "`/roll`, `/coin`, `/drop`, `/oracle`, `/duel` - fun clan commands"
-        ].join("\n"));
+        await interaction.editReply(getCommandHelpText());
         return;
       }
 
@@ -166,6 +158,11 @@ async function main() {
     if (message.author.bot || !client.user) return;
 
     if (!message.mentions.has(client.user)) {
+      if (isAmbientCommandHelpRequest(message.content)) {
+        await message.reply(getCommandHelpText());
+        return;
+      }
+
       try {
         await handleMemeResponder(message);
       } catch (error) {
@@ -180,6 +177,11 @@ async function main() {
 
       if (!prompt) {
         await message.reply("Speak after my name, warrior. Try `@katana ronin bot what should I train today?`");
+        return;
+      }
+
+      if (isCommandHelpRequest(prompt)) {
+        await message.reply(getCommandHelpText());
         return;
       }
 
