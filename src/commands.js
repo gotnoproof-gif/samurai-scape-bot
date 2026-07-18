@@ -51,6 +51,130 @@ export const commandData = [
     .setDescription("Get a short samurai clan quote."),
 
   new SlashCommandBuilder()
+    .setName("quote")
+    .setDescription("Get a famous, samurai, clan, or RuneScape-style quote.")
+    .addStringOption(option =>
+      option
+        .setName("category")
+        .setDescription("Quote category")
+        .setRequired(false)
+        .addChoices(
+          { name: "Random", value: "random" },
+          { name: "Samurai", value: "samurai" },
+          { name: "Famous", value: "famous" },
+          { name: "RuneScape", value: "runescape" },
+          { name: "Clan", value: "clan" }
+        )
+    ),
+
+  new SlashCommandBuilder()
+    .setName("meme")
+    .setDescription("Post a funny RuneScape-style meme image.")
+    .addStringOption(option =>
+      option
+        .setName("topic")
+        .setDescription("Optional meme topic")
+        .setRequired(false)
+        .setMaxLength(80)
+    )
+    .addStringOption(option =>
+      option
+        .setName("style")
+        .setDescription("Meme style")
+        .setRequired(false)
+        .addChoices(
+          { name: "Random", value: "random" },
+          { name: "Drop", value: "drop" },
+          { name: "Grind", value: "grind" },
+          { name: "Boss", value: "boss" },
+          { name: "Bank", value: "bank" },
+          { name: "Clan", value: "clan" }
+        )
+    ),
+
+  new SlashCommandBuilder()
+    .setName("xp")
+    .setDescription("Track fun XP drops, level-ups, and leaderboards.")
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName("gain")
+        .setDescription("Log an XP drop.")
+        .addStringOption(option =>
+          option
+            .setName("skill")
+            .setDescription("Skill name")
+            .setRequired(true)
+            .setMaxLength(40)
+        )
+        .addIntegerOption(option =>
+          option
+            .setName("amount")
+            .setDescription("XP gained")
+            .setRequired(true)
+            .setMinValue(1)
+            .setMaxValue(200000000)
+        )
+        .addStringOption(option =>
+          option
+            .setName("note")
+            .setDescription("Optional flex note")
+            .setRequired(false)
+            .setMaxLength(160)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName("level")
+        .setDescription("Announce a level-up.")
+        .addStringOption(option =>
+          option
+            .setName("skill")
+            .setDescription("Skill name")
+            .setRequired(true)
+            .setMaxLength(40)
+        )
+        .addIntegerOption(option =>
+          option
+            .setName("level")
+            .setDescription("Level reached")
+            .setRequired(true)
+            .setMinValue(1)
+            .setMaxValue(99)
+        )
+        .addStringOption(option =>
+          option
+            .setName("note")
+            .setDescription("Optional flex note")
+            .setRequired(false)
+            .setMaxLength(160)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName("board")
+        .setDescription("Show the XP leaderboard.")
+        .addStringOption(option =>
+          option
+            .setName("skill")
+            .setDescription("Optional skill name")
+            .setRequired(false)
+            .setMaxLength(40)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName("reset")
+        .setDescription("Reset your tracked XP.")
+        .addStringOption(option =>
+          option
+            .setName("skill")
+            .setDescription("Optional skill name")
+            .setRequired(false)
+            .setMaxLength(40)
+        )
+    ),
+
+  new SlashCommandBuilder()
     .setName("boss")
     .setDescription("Create, join, list, and ping boss tags.")
     .addSubcommand(subcommand =>
@@ -181,6 +305,96 @@ export const commandData = [
         .setRequired(false)
         .setMaxLength(80)
     ),
+
+  new SlashCommandBuilder()
+    .setName("profile")
+    .setDescription("Generate a fun ronin profile card.")
+    .addUserOption(option =>
+      option
+        .setName("user")
+        .setDescription("Optional server member")
+        .setRequired(false)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("loot")
+    .setDescription("Announce a loot flex.")
+    .addStringOption(option =>
+      option
+        .setName("item")
+        .setDescription("Loot item")
+        .setRequired(true)
+        .setMaxLength(100)
+    )
+    .addStringOption(option =>
+      option
+        .setName("source")
+        .setDescription("Where it came from")
+        .setRequired(false)
+        .setMaxLength(80)
+    )
+    .addIntegerOption(option =>
+      option
+        .setName("value")
+        .setDescription("Estimated value in gp")
+        .setRequired(false)
+        .setMinValue(1)
+        .setMaxValue(2000000000)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("choose")
+    .setDescription("Let the ronin choose between options.")
+    .addStringOption(option =>
+      option
+        .setName("options")
+        .setDescription("Choices separated by commas, lines, or |")
+        .setRequired(true)
+        .setMaxLength(500)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("timer")
+    .setDescription("Set a simple Discord reminder timer.")
+    .addIntegerOption(option =>
+      option
+        .setName("minutes")
+        .setDescription("Minutes until reminder")
+        .setRequired(true)
+        .setMinValue(1)
+        .setMaxValue(720)
+    )
+    .addStringOption(option =>
+      option
+        .setName("label")
+        .setDescription("Reminder text")
+        .setRequired(true)
+        .setMaxLength(160)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("roast")
+    .setDescription("Give a friendly clan roast.")
+    .addUserOption(option =>
+      option
+        .setName("user")
+        .setDescription("Optional server member")
+        .setRequired(false)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("compliment")
+    .setDescription("Give a clan member a boost.")
+    .addUserOption(option =>
+      option
+        .setName("user")
+        .setDescription("Optional server member")
+        .setRequired(false)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("trivia")
+    .setDescription("Post a quick RuneScape trivia question."),
 
   new SlashCommandBuilder()
     .setName("roninhelp")
