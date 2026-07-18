@@ -17,6 +17,13 @@ import { memeImageResponderIsEnabled } from "./memeImages.js";
 import { getCommandHelpText, isAmbientCommandHelpRequest, isCommandHelpRequest } from "./helpText.js";
 import { askRonin } from "./openaiClient.js";
 import { registerCommands } from "./register-commands.js";
+import {
+  createSamuraiPathSystem,
+  handleSamuraiCommand,
+  samuraiPathIsEnabled,
+  samuraiPathWantsMessageContent,
+  samuraiTimerIsEnabled
+} from "./samuraiPath.js";
 import { startHealthServer } from "./server.js";
 import { createTagStore } from "./storage.js";
 import { randomItem, trimForDiscord } from "./utils.js";
@@ -53,7 +60,7 @@ function requireStartupEnv() {
 function getClientIntents() {
   const intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages];
 
-  if (memeResponderWantsMessageContent()) {
+  if (memeResponderWantsMessageContent() || samuraiPathWantsMessageContent()) {
     intents.push(GatewayIntentBits.MessageContent);
   }
 
@@ -64,15 +71,22 @@ async function main() {
   requireStartupEnv();
   const tagStore = await createTagStore();
   const handleMemeResponder = createMemeResponder();
+  const samuraiPath = createSamuraiPathSystem(tagStore);
   console.log(`Boss tag storage ready: ${tagStore.label}.`);
   console.log([
     `Meme responder: ${memeResponderIsEnabled() ? "enabled" : "disabled"}.`,
     `Meme images: ${memeImageResponderIsEnabled() ? "enabled" : "disabled"}.`,
-    `Message content intent: ${memeResponderWantsMessageContent() ? "requested" : "not requested"}.`
+    `Samurai path: ${samuraiPathIsEnabled() ? "enabled" : "disabled"}.`,
+    `Samurai timer: ${samuraiTimerIsEnabled() ? "enabled" : "disabled"}.`,
+    `Message content intent: ${(memeResponderWantsMessageContent() || samuraiPathWantsMessageContent()) ? "requested" : "not requested"}.`
   ].join(" "));
 
   if (memeResponderIsEnabled() && !memeResponderWantsMessageContent()) {
     console.warn("Meme responder is enabled, but MESSAGE_CONTENT_INTENT_ENABLED is not true.");
+  }
+
+  if (samuraiPathIsEnabled() && !samuraiPathWantsMessageContent()) {
+    console.warn("Samurai path is enabled, but MESSAGE_CONTENT_INTENT_ENABLED is not true.");
   }
 
   const client = new Client({
@@ -89,6 +103,8 @@ async function main() {
     if (process.env.REGISTER_COMMANDS_ON_START === "true") {
       await registerCommands();
     }
+
+    samuraiPath.startTimer();
   });
 
   client.on(Events.InteractionCreate, async interaction => {
@@ -104,6 +120,11 @@ async function main() {
 
       if (interaction.commandName === "xp") {
         await handleXpCommand(interaction, tagStore);
+        return;
+      }
+
+      if (interaction.commandName === "samurai") {
+        await handleSamuraiCommand(interaction, tagStore);
         return;
       }
 
@@ -174,6 +195,14 @@ async function main() {
       if (isAmbientCommandHelpRequest(message.content)) {
         await message.reply(getCommandHelpText());
         return;
+      }
+
+      try {
+        if (await samuraiPath.handleMessage(message)) {
+          return;
+        }
+      } catch (error) {
+        console.error("Samurai path responder failed", error);
       }
 
       try {
