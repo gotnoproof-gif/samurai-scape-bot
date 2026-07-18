@@ -15,15 +15,20 @@ function requireEnv(name) {
 export async function registerCommands() {
   const token = requireEnv("DISCORD_TOKEN");
   const clientId = requireEnv("DISCORD_CLIENT_ID");
+  const commandScope = (process.env.COMMAND_SCOPE || "global").toLowerCase();
   const guildId = process.env.DISCORD_GUILD_ID;
   const rest = new REST({ version: "10" }).setToken(token);
 
-  if (guildId) {
+  if (commandScope === "guild" && guildId) {
     await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
       body: commandData
     });
     console.log(`Registered ${commandData.length} guild commands.`);
     return;
+  }
+
+  if (commandScope === "guild" && !guildId) {
+    console.warn("COMMAND_SCOPE is guild, but DISCORD_GUILD_ID is missing. Registering global commands instead.");
   }
 
   await rest.put(Routes.applicationCommands(clientId), {
