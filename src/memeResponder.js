@@ -1,9 +1,11 @@
 import { randomItem, trimForDiscord } from "./utils.js";
+import { createMemePost, memeImageResponderIsEnabled } from "./memeImages.js";
 
 const DEFAULT_REPLY_CHANCE = 0.06;
 const DEFAULT_KEYWORD_REPLY_CHANCE = 0.22;
 const DEFAULT_COOLDOWN_MS = 180000;
 const DEFAULT_MIN_MESSAGE_LENGTH = 6;
+const DEFAULT_IMAGE_REPLY_CHANCE = 0.35;
 
 const stopWords = new Set([
   "about",
@@ -171,6 +173,15 @@ function genericMeme(content) {
   ]);
 }
 
+function styleFromRule(rule) {
+  if (!rule) return "random";
+  if (rule.keywords.some(keyword => ["drop", "rng", "rare", "dry", "spoon", "loot"].includes(keyword))) return "drop";
+  if (rule.keywords.some(keyword => ["boss", "raid", "nex", "toa", "cox", "tob", "jad"].includes(keyword))) return "boss";
+  if (rule.keywords.some(keyword => ["bank", "gp", "gold", "coins", "ge"].includes(keyword))) return "bank";
+  if (rule.keywords.some(keyword => ["skill", "level", "xp", "grind", "train"].includes(keyword))) return "grind";
+  return "clan";
+}
+
 export function memeResponderWantsMessageContent() {
   return getBooleanEnv("MESSAGE_CONTENT_INTENT_ENABLED", false);
 }
@@ -208,8 +219,18 @@ export function createMemeResponder() {
       return false;
     }
 
-    const content = rule ? randomItem(rule.replies) : genericMeme(cleaned);
     lastReplyByChannel.set(message.channelId, Date.now());
+    const imageReplyChance = getNumberEnv("MEME_IMAGE_REPLY_CHANCE", DEFAULT_IMAGE_REPLY_CHANCE, 0, 1);
+
+    if (memeImageResponderIsEnabled() && Math.random() < imageReplyChance) {
+      await message.reply({
+        ...createMemePost(topicFromContent(cleaned), styleFromRule(rule)),
+        allowedMentions: { parse: [], repliedUser: false }
+      });
+      return true;
+    }
+
+    const content = rule ? randomItem(rule.replies) : genericMeme(cleaned);
 
     await message.reply({
       content: trimForDiscord(content, 600),
