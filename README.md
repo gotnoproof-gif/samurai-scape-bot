@@ -13,12 +13,14 @@ It is fan-made and not official RuneScape or Jagex.
 - `/clanquote` gives a short clan quote.
 - `/boss create/join/leave/list/ping` manages boss tags.
 - `/xp gain/level/board/reset` tracks fun XP drops and server leaderboards.
+- `/samurai path/train/board` tracks each member's stored storyline progress toward becoming a samurai.
 - `/meme` posts RuneScape-style meme images.
 - `/quote` posts famous, samurai, clan, or RuneScape-style quotes.
 - `/profile`, `/loot`, `/choose`, and `/timer` add game-night tools.
 - `/roll`, `/coin`, `/drop`, `/oracle`, and `/duel` are fun clan commands.
 - `/roast`, `/compliment`, and `/trivia` add more chat fun.
 - Random chat memes can be enabled so the bot sometimes replies to normal messages with RuneScape-style meme lines or meme images.
+- The samurai path can randomly award path XP or quotes when people talk, plus occasional timer scrolls in active channels.
 - `/roninhelp` lists the commands.
 - Mentioning the bot and asking for `commands` or `help` also shows the command list.
 
@@ -61,6 +63,15 @@ MEME_REPLY_CHANCE=0.06
 MEME_KEYWORD_REPLY_CHANCE=0.22
 MEME_IMAGE_REPLY_CHANCE=0.35
 MEME_COOLDOWN_MS=180000
+SAMURAI_PATH_ENABLED=true
+SAMURAI_TIMER_ENABLED=true
+SAMURAI_TIMER_MINUTES=30
+SAMURAI_TIMER_POST_CHANCE=0.65
+SAMURAI_CHAT_EVENT_CHANCE=0.10
+SAMURAI_CHAT_COOLDOWN_MS=240000
+SAMURAI_USER_XP_COOLDOWN_MS=900000
+SAMURAI_XP_MIN=10
+SAMURAI_XP_MAX=30
 ```
 
 Start the bot:
@@ -91,6 +102,8 @@ Slash commands are global by default, so they work in every server where the bot
 
 For random chat memes, turn on the bot's Message Content Intent in the Discord Developer Portal, then set `MESSAGE_CONTENT_INTENT_ENABLED=true`. Without that Discord switch, the bot can still run slash commands and boss tags, but it cannot read normal chat text.
 
+The samurai path also needs `MESSAGE_CONTENT_INTENT_ENABLED=true` if you want random chat XP, random quotes, and timer scrolls based on active chat channels. Progress is saved in Postgres when `DATABASE_URL` is set.
+
 ## Remote hosting setup
 
 Railway is the easiest option for this bot.
@@ -108,7 +121,14 @@ Railway is the easiest option for this bot.
    - `MEME_KEYWORD_REPLY_CHANCE=0.22`
    - `MEME_IMAGE_REPLY_CHANCE=0.35`
    - `MEME_COOLDOWN_MS=180000`
-7. Deploy it.
+7. To enable the samurai path, set:
+   - `SAMURAI_PATH_ENABLED=true`
+   - `SAMURAI_TIMER_ENABLED=true`
+   - `SAMURAI_TIMER_MINUTES=30`
+   - `SAMURAI_CHAT_EVENT_CHANCE=0.10`
+   - `SAMURAI_CHAT_COOLDOWN_MS=240000`
+   - `SAMURAI_USER_XP_COOLDOWN_MS=900000`
+8. Deploy it.
 
 Without `DATABASE_URL`, the bot falls back to a local JSON file for development. That is fine for testing, but Postgres is the fully remote setup.
 
