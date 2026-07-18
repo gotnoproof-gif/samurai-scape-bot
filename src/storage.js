@@ -20,6 +20,19 @@ function cleanDisplayName(name) {
   return name.trim().replace(/\s+/g, " ").slice(0, 60);
 }
 
+function normalizeSkillName(skill) {
+  return skill
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
+function cleanSkillDisplayName(skill) {
+  return skill.trim().replace(/\s+/g, " ").slice(0, 40);
+}
+
 function createEmptyData() {
   return { guilds: {} };
 }
@@ -50,6 +63,8 @@ class JsonTagStore {
 
   getGuild(data, guildId) {
     data.guilds[guildId] ||= { tags: {} };
+    data.guilds[guildId].tags ||= {};
+    data.guilds[guildId].xpTotals ||= {};
     return data.guilds[guildId];
   }
 
@@ -138,6 +153,62 @@ class JsonTagStore {
       members: Object.keys(tag.members || {})
     };
   }
+
+  async addXp(guildId, userId, skill, amount) {
+    const skillKey = normalizeSkillName(skill);
+    const skillName = cleanSkillDisplayName(skill);
+    const data = await this.read();
+    const guild = this.getGuild(data, guildId);
+    const key = `${userId}:${skillKey}`;
+
+    guild.xpTotals[key] ||= {
+      userId,
+      skillKey,
+      skillName,
+      totalXp: 0,
+      updatedAt: new Date().toISOString()
+    };
+
+    guild.xpTotals[key].totalXp += amount;
+    guild.xpTotals[key].skillName = skillName;
+    guild.xpTotals[key].updatedAt = new Date().toISOString();
+
+    await this.write(data);
+    return guild.xpTotals[key];
+  }
+
+  async listXpLeaderboard(guildId, skill, limit = 10) {
+    const data = await this.read();
+    const guild = this.getGuild(data, guildId);
+    const skillKey = skill ? normalizeSkillName(skill) : null;
+    const totalsByUser = new Map();
+
+    for (const row of Object.values(guild.xpTotals || {})) {
+      if (skillKey && row.skillKey !== skillKey) continue;
+
+      const current = totalsByUser.get(row.userId) || 0;
+      totalsByUser.set(row.userId, current + Number(row.totalXp || 0));
+    }
+
+    return Array.from(totalsByUser.entries())
+      .map(([userId, totalXp]) => ({ userId, totalXp }))
+      .sort((a, b) => b.totalXp - a.totalXp)
+      .slice(0, limit);
+  }
+
+  async resetXp(guildId, userId, skill) {
+    const data = await this.read();
+    const guild = this.getGuild(data, guildId);
+    const skillKey = skill ? normalizeSkillName(skill) : null;
+
+    for (const [key, row] of Object.entries(guild.xpTotals || {})) {
+      if (row.userId !== userId) continue;
+      if (skillKey && row.skillKey !== skillKey) continue;
+      delete guild.xpTotals[key];
+    }
+
+    await this.write(data);
+  }
 }
 
 class PostgresTagStore {
@@ -166,6 +237,16 @@ class PostgresTagStore {
         FOREIGN KEY (guild_id, tag_key)
           REFERENCES boss_tags (guild_id, tag_key)
           ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS xp_totals (
+        guild_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        skill_key TEXT NOT NULL,
+        skill_name TEXT NOT NULL,
+        total_xp BIGINT NOT NULL DEFAULT 0,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (guild_id, user_id, skill_key)
       );
     `);
   }
@@ -276,6 +357,74 @@ class PostgresTagStore {
       tag,
       members: result.rows.map(row => row.user_id)
     };
+  }
+
+  async addXp(guildId, userId, skill, amount) {
+    const skillKey = normalizeSkillName(skill);
+    const skillName = cleanSkillDisplayName(skill);
+    const result = await this.pool.query(
+      `INSERT INTO xp_totals (guild_id, user_id, skill_key, skill_name, total_xp)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (guild_id, user_id, skill_key)
+       DO UPDATE SET
+         skill_name = EXCLUDED.skill_name,
+         total_xp = xp_totals.total_xp + EXCLUDED.total_xp,
+         updated_at = NOW()
+       RETURNING user_id, skill_key, skill_name, total_xp`,
+      [guildId, userId, skillKey, skillName, amount]
+    );
+
+    return {
+      userId: result.rows[0].user_id,
+      skillKey: result.rows[0].skill_key,
+      skillName: result.rows[0].skill_name,
+      totalXp: Number(result.rows[0].total_xp)
+    };
+  }
+
+  async listXpLeaderboard(guildId, skill, limit = 10) {
+    const skillKey = skill ? normalizeSkillName(skill) : null;
+    const result = skillKey
+      ? await this.pool.query(
+        `SELECT user_id, SUM(total_xp)::BIGINT AS total_xp
+         FROM xp_totals
+         WHERE guild_id = $1 AND skill_key = $2
+         GROUP BY user_id
+         ORDER BY SUM(total_xp) DESC
+         LIMIT $3`,
+        [guildId, skillKey, limit]
+      )
+      : await this.pool.query(
+        `SELECT user_id, SUM(total_xp)::BIGINT AS total_xp
+         FROM xp_totals
+         WHERE guild_id = $1
+         GROUP BY user_id
+         ORDER BY SUM(total_xp) DESC
+         LIMIT $2`,
+        [guildId, limit]
+      );
+
+    return result.rows.map(row => ({
+      userId: row.user_id,
+      totalXp: Number(row.total_xp)
+    }));
+  }
+
+  async resetXp(guildId, userId, skill) {
+    const skillKey = skill ? normalizeSkillName(skill) : null;
+
+    if (skillKey) {
+      await this.pool.query(
+        "DELETE FROM xp_totals WHERE guild_id = $1 AND user_id = $2 AND skill_key = $3",
+        [guildId, userId, skillKey]
+      );
+      return;
+    }
+
+    await this.pool.query(
+      "DELETE FROM xp_totals WHERE guild_id = $1 AND user_id = $2",
+      [guildId, userId]
+    );
   }
 }
 
